@@ -1,41 +1,61 @@
 package TEST;
 
 import MAIN.QuantityMeasurementAppMAIN.Feet;
+import MAIN.QuantityMeasurementAppMAIN.Inches;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class QuantityMeasurementAppTEST {
 
     @Test
-    void testEquality_SameValue() {
-        Feet f1 = new Feet(1.0);
-        Feet f2 = new Feet(1.0);
-        assertTrue(f1.equals(f2));
+    void testFeetEquality_SameValue() {
+        assertTrue(new Feet(1.0).equals(new Feet(1.0)));
     }
 
     @Test
-    void testEquality_DifferentValue() {
-        Feet f1 = new Feet(1.0);
-        Feet f2 = new Feet(2.0);
-        assertFalse(f1.equals(f2));
+    void testFeetEquality_DifferentValue() {
+        assertFalse(new Feet(1.0).equals(new Feet(2.0)));
     }
 
     @Test
-    void testEquality_NullComparison() {
-        Feet f1 = new Feet(1.0);
-        assertFalse(f1.equals(null));
+    void testFeetEquality_NullComparison() {
+        assertFalse(new Feet(1.0).equals(null));
     }
 
     @Test
-    void testEquality_NonNumericInput() {
-        Feet f1 = new Feet(1.0);
-        String nonNumeric = "test";
-        assertFalse(f1.equals(nonNumeric));
+    void testFeetEquality_NonNumericInput() {
+        assertFalse(new Feet(1.0).equals("test"));
     }
 
     @Test
-    void testEquality_SameReference() {
-        Feet f1 = new Feet(1.0);
-        assertTrue(f1.equals(f1));
+    void testFeetEquality_SameReference() {
+        Feet f = new Feet(1.0);
+        assertTrue(f.equals(f));
+    }
+
+    @Test
+    void testInchesEquality_SameValue() {
+        assertTrue(new Inches(1.0).equals(new Inches(1.0)));
+    }
+
+    @Test
+    void testInchesEquality_DifferentValue() {
+        assertFalse(new Inches(1.0).equals(new Inches(2.0)));
+    }
+
+    @Test
+    void testInchesEquality_NullComparison() {
+        assertFalse(new Inches(1.0).equals(null));
+    }
+
+    @Test
+    void testInchesEquality_NonNumericInput() {
+        assertFalse(new Inches(1.0).equals("test"));
+    }
+
+    @Test
+    void testInchesEquality_SameReference() {
+        Inches i = new Inches(1.0);
+        assertTrue(i.equals(i));
     }
 }
