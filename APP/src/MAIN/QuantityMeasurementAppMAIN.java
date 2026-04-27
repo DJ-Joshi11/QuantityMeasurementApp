@@ -115,11 +115,35 @@ class Quantity<U extends IMeasurable> {
 
     Quantity<U> add(Quantity<U> other, U target) {
         if (other == null || target == null) throw new IllegalArgumentException();
-        double base1 = unit.convertToBaseUnit(value);
-        double base2 = other.unit.convertToBaseUnit(other.value);
-        double sum = base1 + base2;
+        validateCategory(other);
+        double sum = unit.convertToBaseUnit(value) + other.unit.convertToBaseUnit(other.value);
         double result = target.convertFromBaseUnit(sum);
         return new Quantity<>(round(result), target);
+    }
+
+    Quantity<U> subtract(Quantity<U> other) {
+        return subtract(other, this.unit);
+    }
+
+    Quantity<U> subtract(Quantity<U> other, U target) {
+        if (other == null || target == null) throw new IllegalArgumentException();
+        validateCategory(other);
+        double diff = unit.convertToBaseUnit(value) - other.unit.convertToBaseUnit(other.value);
+        double result = target.convertFromBaseUnit(diff);
+        return new Quantity<>(round(result), target);
+    }
+
+    double divide(Quantity<U> other) {
+        if (other == null) throw new IllegalArgumentException();
+        validateCategory(other);
+        double baseOther = other.unit.convertToBaseUnit(other.value);
+        if (baseOther == 0.0) throw new ArithmeticException();
+        double baseThis = unit.convertToBaseUnit(value);
+        return baseThis / baseOther;
+    }
+
+    private void validateCategory(Quantity<?> other) {
+        if (!unit.getClass().equals(other.unit.getClass())) throw new IllegalArgumentException();
     }
 
     private double round(double v) {
@@ -151,10 +175,10 @@ class Quantity<U extends IMeasurable> {
 
 public class QuantityMeasurementAppMAIN {
     public static void main(String[] args) {
-        Quantity<VolumeUnit> v1 = new Quantity<>(1.0, VolumeUnit.LITRE);
-        Quantity<VolumeUnit> v2 = new Quantity<>(1000.0, VolumeUnit.MILLILITRE);
-        System.out.println(v1.equals(v2));
-        System.out.println(v1.convertTo(VolumeUnit.MILLILITRE));
-        System.out.println(v1.add(v2, VolumeUnit.LITRE));
+        Quantity<LengthUnit> l1 = new Quantity<>(10.0, LengthUnit.FEET);
+        Quantity<LengthUnit> l2 = new Quantity<>(6.0, LengthUnit.INCHES);
+        System.out.println(l1.subtract(l2));
+        System.out.println(l1.subtract(l2, LengthUnit.INCHES));
+        System.out.println(l1.divide(new Quantity<>(2.0, LengthUnit.FEET)));
     }
 }
