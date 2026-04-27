@@ -1,5 +1,7 @@
 package MAIN;
 
+import java.util.function.DoubleBinaryOperator;
+
 interface IMeasurable {
     double getConversionFactor();
     double convertToBaseUnit(double value);
@@ -19,21 +21,10 @@ enum LengthUnit implements IMeasurable {
         this.factor = factor;
     }
 
-    public double getConversionFactor() {
-        return factor;
-    }
-
-    public double convertToBaseUnit(double value) {
-        return value * factor;
-    }
-
-    public double convertFromBaseUnit(double baseValue) {
-        return baseValue / factor;
-    }
-
-    public String getUnitName() {
-        return name();
-    }
+    public double getConversionFactor() { return factor; }
+    public double convertToBaseUnit(double value) { return value * factor; }
+    public double convertFromBaseUnit(double baseValue) { return baseValue / factor; }
+    public String getUnitName() { return name(); }
 }
 
 enum WeightUnit implements IMeasurable {
@@ -47,21 +38,10 @@ enum WeightUnit implements IMeasurable {
         this.factor = factor;
     }
 
-    public double getConversionFactor() {
-        return factor;
-    }
-
-    public double convertToBaseUnit(double value) {
-        return value * factor;
-    }
-
-    public double convertFromBaseUnit(double baseValue) {
-        return baseValue / factor;
-    }
-
-    public String getUnitName() {
-        return name();
-    }
+    public double getConversionFactor() { return factor; }
+    public double convertToBaseUnit(double value) { return value * factor; }
+    public double convertFromBaseUnit(double baseValue) { return baseValue / factor; }
+    public String getUnitName() { return name(); }
 }
 
 enum VolumeUnit implements IMeasurable {
@@ -75,21 +55,10 @@ enum VolumeUnit implements IMeasurable {
         this.factor = factor;
     }
 
-    public double getConversionFactor() {
-        return factor;
-    }
-
-    public double convertToBaseUnit(double value) {
-        return value * factor;
-    }
-
-    public double convertFromBaseUnit(double baseValue) {
-        return baseValue / factor;
-    }
-
-    public String getUnitName() {
-        return name();
-    }
+    public double getConversionFactor() { return factor; }
+    public double convertToBaseUnit(double value) { return value * factor; }
+    public double convertFromBaseUnit(double baseValue) { return baseValue / factor; }
+    public String getUnitName() { return name(); }
 }
 
 class Quantity<U extends IMeasurable> {
@@ -102,11 +71,42 @@ class Quantity<U extends IMeasurable> {
         this.unit = unit;
     }
 
+    private enum ArithmeticOperation {
+        ADD((a, b) -> a + b),
+        SUBTRACT((a, b) -> a - b),
+        DIVIDE((a, b) -> {
+            if (b == 0.0) throw new ArithmeticException();
+            return a / b;
+        });
+
+        private final DoubleBinaryOperator op;
+
+        ArithmeticOperation(DoubleBinaryOperator op) {
+            this.op = op;
+        }
+
+        double compute(double a, double b) {
+            return op.applyAsDouble(a, b);
+        }
+    }
+
+    private void validateArithmeticOperands(Quantity<U> other, U targetUnit, boolean targetRequired) {
+        if (other == null) throw new IllegalArgumentException();
+        if (!unit.getClass().equals(other.unit.getClass())) throw new IllegalArgumentException();
+        if (!Double.isFinite(value) || !Double.isFinite(other.value)) throw new IllegalArgumentException();
+        if (targetRequired && targetUnit == null) throw new IllegalArgumentException();
+    }
+
+    private double performBaseArithmetic(Quantity<U> other, ArithmeticOperation operation) {
+        double base1 = unit.convertToBaseUnit(value);
+        double base2 = other.unit.convertToBaseUnit(other.value);
+        return operation.compute(base1, base2);
+    }
+
     Quantity<U> convertTo(U target) {
         if (target == null) throw new IllegalArgumentException();
         double base = unit.convertToBaseUnit(value);
-        double converted = target.convertFromBaseUnit(base);
-        return new Quantity<>(round(converted), target);
+        return new Quantity<>(round(target.convertFromBaseUnit(base)), target);
     }
 
     Quantity<U> add(Quantity<U> other) {
@@ -114,11 +114,9 @@ class Quantity<U extends IMeasurable> {
     }
 
     Quantity<U> add(Quantity<U> other, U target) {
-        if (other == null || target == null) throw new IllegalArgumentException();
-        validateCategory(other);
-        double sum = unit.convertToBaseUnit(value) + other.unit.convertToBaseUnit(other.value);
-        double result = target.convertFromBaseUnit(sum);
-        return new Quantity<>(round(result), target);
+        validateArithmeticOperands(other, target, true);
+        double base = performBaseArithmetic(other, ArithmeticOperation.ADD);
+        return new Quantity<>(round(target.convertFromBaseUnit(base)), target);
     }
 
     Quantity<U> subtract(Quantity<U> other) {
@@ -126,24 +124,14 @@ class Quantity<U extends IMeasurable> {
     }
 
     Quantity<U> subtract(Quantity<U> other, U target) {
-        if (other == null || target == null) throw new IllegalArgumentException();
-        validateCategory(other);
-        double diff = unit.convertToBaseUnit(value) - other.unit.convertToBaseUnit(other.value);
-        double result = target.convertFromBaseUnit(diff);
-        return new Quantity<>(round(result), target);
+        validateArithmeticOperands(other, target, true);
+        double base = performBaseArithmetic(other, ArithmeticOperation.SUBTRACT);
+        return new Quantity<>(round(target.convertFromBaseUnit(base)), target);
     }
 
     double divide(Quantity<U> other) {
-        if (other == null) throw new IllegalArgumentException();
-        validateCategory(other);
-        double baseOther = other.unit.convertToBaseUnit(other.value);
-        if (baseOther == 0.0) throw new ArithmeticException();
-        double baseThis = unit.convertToBaseUnit(value);
-        return baseThis / baseOther;
-    }
-
-    private void validateCategory(Quantity<?> other) {
-        if (!unit.getClass().equals(other.unit.getClass())) throw new IllegalArgumentException();
+        validateArithmeticOperands(other, null, false);
+        return performBaseArithmetic(other, ArithmeticOperation.DIVIDE);
     }
 
     private double round(double v) {
@@ -163,8 +151,7 @@ class Quantity<U extends IMeasurable> {
 
     @Override
     public int hashCode() {
-        double base = unit.convertToBaseUnit(value);
-        return Double.hashCode(base);
+        return Double.hashCode(unit.convertToBaseUnit(value));
     }
 
     @Override
@@ -175,10 +162,11 @@ class Quantity<U extends IMeasurable> {
 
 public class QuantityMeasurementAppMAIN {
     public static void main(String[] args) {
-        Quantity<LengthUnit> l1 = new Quantity<>(10.0, LengthUnit.FEET);
-        Quantity<LengthUnit> l2 = new Quantity<>(6.0, LengthUnit.INCHES);
-        System.out.println(l1.subtract(l2));
-        System.out.println(l1.subtract(l2, LengthUnit.INCHES));
-        System.out.println(l1.divide(new Quantity<>(2.0, LengthUnit.FEET)));
+        Quantity<LengthUnit> a = new Quantity<>(10.0, LengthUnit.FEET);
+        Quantity<LengthUnit> b = new Quantity<>(6.0, LengthUnit.INCHES);
+
+        System.out.println(a.add(b));
+        System.out.println(a.subtract(b));
+        System.out.println(a.divide(new Quantity<>(2.0, LengthUnit.FEET)));
     }
 }
