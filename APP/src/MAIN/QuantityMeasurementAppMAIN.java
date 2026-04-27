@@ -37,18 +37,20 @@ public class QuantityMeasurementAppMAIN {
             return unit.toBase(value);
         }
 
+        private static QuantityLength addInternal(QuantityLength a, QuantityLength b, LengthUnit target) {
+            double sumBase = a.toFeet() + b.toFeet();
+            double result = target.fromBase(sumBase);
+            return new QuantityLength(result, target);
+        }
+
         public QuantityLength add(QuantityLength other) {
             if (other == null) throw new IllegalArgumentException();
-            double sumBase = this.toFeet() + other.toFeet();
-            double result = this.unit.fromBase(sumBase);
-            return new QuantityLength(result, this.unit);
+            return addInternal(this, other, this.unit);
         }
 
         public static QuantityLength add(QuantityLength a, QuantityLength b, LengthUnit target) {
             if (a == null || b == null || target == null) throw new IllegalArgumentException();
-            double sumBase = a.toFeet() + b.toFeet();
-            double result = target.fromBase(sumBase);
-            return new QuantityLength(result, target);
+            return addInternal(a, b, target);
         }
 
         @Override
@@ -68,6 +70,6 @@ public class QuantityMeasurementAppMAIN {
     public static void main(String[] args) {
         QuantityLength a = new QuantityLength(1.0, LengthUnit.FEET);
         QuantityLength b = new QuantityLength(12.0, LengthUnit.INCH);
-        System.out.println(a.add(b));
+        System.out.println(QuantityLength.add(a, b, LengthUnit.YARD));
     }
 }
